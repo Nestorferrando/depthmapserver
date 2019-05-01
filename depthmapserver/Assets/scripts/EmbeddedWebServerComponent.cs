@@ -1,12 +1,7 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Net.Sockets;
-using System.Threading;
-using System.Collections.Generic;
 using UnityEngine.UI;
-using System.IO;
 using System;
-using UnityEngine.Networking;
 using System.Net;
 
 namespace UniWebServer
@@ -116,16 +111,9 @@ namespace UniWebServer
                     response.Write("endpoints: /sample, /viewdepth, /depthdata");
                     break;
             }
-
-
-
-
-
-
-
+     
         }
 
     }
-
 
 }
