@@ -61,6 +61,16 @@ namespace UniWebServer
         }
 
 
+
+        public static string GetJPGDataURI(byte[] imgBytes)
+        {
+            return "<img src=\"data:image/jpeg"
+                        + ";base64,"
+                        + Convert.ToBase64String(imgBytes) + "\" />";
+        }
+
+    
+
         void OnApplicationQuit ()
         {
             server.Dispose ();
@@ -80,26 +90,39 @@ namespace UniWebServer
             GameObject.Find("counter").GetComponent<Text>().text = requestCount+"";
             GameObject.Find("accesslog").GetComponent<Text>().text = DateTime.Now.ToString();
 
+            var localPath = request.uri.LocalPath;
+            Debug.Log("request localPath :" + localPath);
 
-            response.statusCode = 200;
-            response.message = "OK";
-            response.Write(sampleImage);
+            switch (localPath)
+            {
+                case "/depthdata":
+                    response.statusCode = 200;
+                    response.message = "OK";
+                    response.Write("not implemented yet");
+                    break;
+                case "/viewdepth":
+                    response.statusCode = 200;
+                    response.message = "OK";
+                    response.Write("not implemented yet");
+                    break;
+                case "/sample":
+                    response.statusCode = 200;
+                    response.message = "OK";
+                    response.Write(sampleImage);
+                    break;
+                default:
+                    response.statusCode = 200;
+                    response.message = "OK";
+                    response.Write("endpoints: /sample, /viewdepth, /depthdata");
+                    break;
+            }
 
 
 
-            /*
-            if (resources.ContainsKey (request.uri.LocalPath)) {
-                try {
-                    resources [request.uri.LocalPath].HandleRequest (request, response);
-                } catch (Exception e) {
-                    response.statusCode = 500;
-                    response.Write (e.Message);
-                }
-            } else {
-                response.statusCode = 404;
-                response.message = "Not Found.";
-                response.Write (request.uri.LocalPath + " not found.");
-            }*/
+
+
+
+
         }
 
     }
