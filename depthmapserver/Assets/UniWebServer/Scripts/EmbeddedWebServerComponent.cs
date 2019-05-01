@@ -41,21 +41,22 @@ namespace UniWebServer
                 server.Start ();
             }
  
-            GameObject.Find("serveraddress").GetComponent<Text>().text = GetLocalIPAddress() + ":" + port;
+            GameObject.Find("serveraddress").GetComponent<Text>().text = GetLocalIPAddress();
         }
 
-        public static string GetLocalIPAddress()
+        private string GetLocalIPAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
+            var add = "";
             foreach (var ip in host.AddressList)
             {
-                Debug.Log("found network ip: "+ ip.ToString());
-                if (ip.AddressFamily == AddressFamily.InterNetwork && ip.ToString()!="127.0.0.1")
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
                 {
-                    return ip.ToString();
+                     add+= ip.ToString() + ":" + port + "\n";
                 }
             }
-            return "No network adapters found";
+            if (add.Length==0) add = "No network adapters found";
+            return add;
 
         }
 
