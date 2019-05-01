@@ -29,6 +29,9 @@ namespace UniWebServer
 
         void Start ()
         {
+
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
             if (processRequestsInMainThread)
                 Application.runInBackground = true;
             server = new WebServer (port, workerThreads, processRequestsInMainThread);
@@ -39,8 +42,6 @@ namespace UniWebServer
             }
  
             GameObject.Find("serveraddress").GetComponent<Text>().text = GetLocalIPAddress() + ":" + port;
-
-
         }
 
         public static string GetLocalIPAddress()
@@ -48,7 +49,7 @@ namespace UniWebServer
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (var ip in host.AddressList)
             {
-                Debug.Log(ip.ToString());
+                Debug.Log("found network ip: "+ ip.ToString());
                 if (ip.AddressFamily == AddressFamily.InterNetwork && ip.ToString()!="127.0.0.1")
                 {
                     return ip.ToString();
