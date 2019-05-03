@@ -109,7 +109,9 @@ namespace UniWebServer
                 case "/depthdata":
                     response.statusCode = 200;
                     response.message = "OK";
-                    response.Write(Convert.ToBase64String(floatToByteArray(getDepthDataFloatArray().data)));
+                    var depthMap = getDepthDataFloatArray();
+                    var depthResponse = new DepthDataResponse(Convert.ToBase64String(floatToByteArray(depthMap.data)), depthMap.width, depthMap.height);
+                    response.Write(JsonUtility.ToJson(depthResponse));
                     break;
                 case "/viewdepth":
                     response.statusCode = 200;
