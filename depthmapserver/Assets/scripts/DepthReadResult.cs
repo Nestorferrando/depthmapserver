@@ -4,29 +4,38 @@ namespace UniWebServer
 
     public class DepthReadResult
     {
-        public int width;
-        public int height;
-        public float[] data;
+        public int depthWidth;
+        public int depthHeight;
+        public float[] depthData;
+        public int imgWidth;
+        public int imgHeight;
+        public byte[] imgData;
 
-        public DepthReadResult(float[] data, int width, int height)
+
+        public DepthReadResult(float[] depthData, int depthWidth, int depthHeight, byte[] imgData, int imgWidth, int imgHeight)
         {
-            this.data = data;
-            this.width = width;
-            this.height = height;
+            this.depthData = depthData;
+            this.depthWidth = depthWidth;
+            this.depthHeight = depthHeight;
+            this.imgData = imgData;
+            this.imgWidth = imgWidth;
+            this.imgHeight = imgHeight;
         }
     }
 
     public class DepthDataResponse
     {
-        public int width;
-        public int height;
-        public string data;
+        public int depthWidth;
+        public int depthHeight;
+        public string depthData;
+        public string jpgImageData;
 
-        public DepthDataResponse(string data, int width, int height)
+        public DepthDataResponse(string depthData, int depthWidth, int depthHeight, string jpgImageData)
         {
-            this.data = data;
-            this.width = width;
-            this.height = height;
+            this.depthData = depthData;
+            this.depthWidth = depthWidth;
+            this.depthHeight = depthHeight;
+            this.jpgImageData = jpgImageData;
         }
     }
 

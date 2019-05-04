@@ -107,16 +107,18 @@ namespace UniWebServer
             switch (localPath)
             {
                 case "/depthdata":
+                    var depthMap = getDepthDataFloatArray();
                     response.statusCode = 200;
                     response.message = "OK";
-                    var depthMap = getDepthDataFloatArray();
-                    var depthResponse = new DepthDataResponse(Convert.ToBase64String(floatToByteArray(depthMap.data)), depthMap.width, depthMap.height);
+                    var depthResponse = new DepthDataResponse(
+                        Convert.ToBase64String(floatToByteArray(depthMap.depthData)), depthMap.depthWidth, depthMap.depthHeight, Convert.ToBase64String(getimgJPG(depthMap)));
                     response.Write(JsonUtility.ToJson(depthResponse));
                     break;
                 case "/viewdepth":
+                    var depthMap2 = getDepthDataFloatArray();
                     response.statusCode = 200;
                     response.message = "OK";
-                    response.Write(GetJPGDataURI(getDepthJPG()));
+                    response.Write("<h3>depth:</h3> "+ GetJPGDataURI(getDepthJPG(depthMap2))+ "<h3>image:</h3> " + GetJPGDataURI(getimgJPG(depthMap2)));
                     break;
                 case "/sample":
                     response.statusCode = 200;
@@ -132,16 +134,15 @@ namespace UniWebServer
 
         }
 
-        private byte[] getDepthJPG()
+        private byte[] getDepthJPG(DepthReadResult result)
         {
-            var depth = getDepthDataFloatArray();
-
-                            var texture = new Texture2D(depth.width, depth.height);
-            for (var y = 0; y < depth.height; y++)
+ 
+            var texture = new Texture2D(result.depthWidth, result.depthHeight);
+            for (var y = 0; y < result.depthHeight; y++)
             {
-                for (var x = 0; x < depth.width; x++)
+                for (var x = 0; x < result.depthWidth; x++)
                 {
-                    var v = depth.data[y * depth.width + x];
+                    var v = result.depthData[y * result.depthWidth + x];
                     Color color;
                     if (float.IsNaN(v))
                     {
@@ -156,7 +157,30 @@ namespace UniWebServer
             }
 
             texture.Apply();
-            var jpg = texture.EncodeToJPG();
+            var jpg = texture.EncodeToJPG(100);
+            Destroy(texture);
+            return jpg;
+        }
+
+        private byte[] getimgJPG(DepthReadResult result)
+        {
+
+            var texture = new Texture2D(result.imgWidth, result.imgHeight);
+            for (var y = 0; y < result.imgHeight; y++)
+            {
+                for (var x = 0; x < result.imgWidth; x++)
+                {
+                    var b = result.imgData[(y * result.imgWidth + x)*4];
+                    var r = result.imgData[(y * result.imgWidth + x)*4+1];
+                    var g = result.imgData[(y * result.imgWidth + x)*4+2];
+                    var a = result.imgData[(y * result.imgWidth + x)*4+3];
+                    var color = new Color(r/255f,g / 255f, b / 255f, a / 255f);
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            texture.Apply();
+            var jpg = texture.EncodeToJPG(100);
             Destroy(texture);
             return jpg;
         }
@@ -176,26 +200,39 @@ namespace UniWebServer
             {
                 int width = 0, height = 0;
                 float[] pixels = null;
+                int imgWidth = 0, imgHeight = 0;
+                byte[] imgPixels = null;
                 capture_.AcquireNextFrame((pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight) =>
                 {
                     width = depthWidth;
                     height = depthHeight;
+                    imgWidth = videoWidth;
+                    imgHeight = videoHeight;
                     pixels = new float[width * height];
+                    imgPixels = new byte[imgWidth * imgHeight * 4];
                     Marshal.Copy(pDepthData, pixels, 0, width * height);
+                    Marshal.Copy(pVideoData, imgPixels, 0, imgWidth * imgHeight * 4);
+
                 });
-                return new DepthReadResult(pixels, width, height);
+                return new DepthReadResult(pixels, width, height,imgPixels,imgWidth,imgHeight);
             }
             else
             {
                 var checkerboard = new float[4096];
+                var checkerboardImg = new byte[4096*4];
                 for (var y = 0; y < 64; y++)
                 {
                     for (var x = 0; x < 64; x++)
                     {
                         checkerboard[y * 64 + x] = y / 64f;
+                        checkerboardImg[(y * 64 + x)*4]     = 128;
+                        checkerboardImg[(y * 64 + x) * 4+1] = 128;
+                        checkerboardImg[(y * 64 + x) * 4+2] = (byte)(y*3);
+                        checkerboardImg[(y * 64 + x) * 4+3] = 255;
+
                     }
                 }
-                return new DepthReadResult(checkerboard,64,64);
+                return new DepthReadResult(checkerboard,64,64, checkerboardImg,64,64);
             }
         }
 
