@@ -171,8 +171,8 @@ namespace UniWebServer
                 for (var x = 0; x < result.imgWidth; x++)
                 {
                     var b = result.imgData[(y * result.imgWidth + x)*4];
-                    var r = result.imgData[(y * result.imgWidth + x)*4+1];
-                    var g = result.imgData[(y * result.imgWidth + x)*4+2];
+                    var g = result.imgData[(y * result.imgWidth + x)*4+1];
+                    var r = result.imgData[(y * result.imgWidth + x)*4+2];
                     var a = result.imgData[(y * result.imgWidth + x)*4+3];
                     var color = new Color(r/255f,g / 255f, b / 255f, a / 255f);
                     texture.SetPixel(x, y, color);
