@@ -110,14 +110,19 @@ namespace UniWebServer
                     response.statusCode = 200;
                     response.message = "OK";
                     var depthResponse = new DepthDataResponse(
-                        Convert.ToBase64String(floatToByteArray(depthMap.depthData)), depthMap.depthWidth, depthMap.depthHeight, Convert.ToBase64String(getimgJPG(depthMap)));
+                        Convert.ToBase64String(floatToByteArray(depthMap.depthData)), depthMap.depthWidth, depthMap.depthHeight,
+                        Convert.ToBase64String(floatToByteArray(depthMap.depthDataFilter)), depthMap.depthWidthFilter, depthMap.depthHeightFilter,
+                        Convert.ToBase64String(getimgJPG(depthMap)));
                     response.Write(JsonUtility.ToJson(depthResponse));
                     break;
                 case "/viewdepth":
                     var depthMap2 = getDepthDataFloatArray();
                     response.statusCode = 200;
                     response.message = "OK";
-                    response.Write("<html><body bgcolor=\"#E6E6FA\"><h3>depth:</h3> " + GetJPGDataURI(getDepthJPG(depthMap2))+ "<h3>image:</h3> " + GetJPGDataURI(getimgJPG(depthMap2)) + "</body></html>");
+                    response.Write("<html><body bgcolor=\"#E6E6FA\"><h3>depth:</h3> " + 
+                        GetJPGDataURI(getDepthJPG(depthMap2.depthData,depthMap2.depthWidth,depthMap2.depthHeight))+ "<h3>depth filtered:</h3> " +
+                        GetJPGDataURI(getDepthJPG(depthMap2.depthDataFilter, depthMap2.depthWidthFilter, depthMap2.depthHeightFilter)) + "<h3>image:</h3> " +
+                        GetJPGDataURI(getimgJPG(depthMap2)) + "</body></html>");
                     break;
                 default:
                     response.statusCode = 200;
@@ -128,15 +133,15 @@ namespace UniWebServer
 
         }
 
-        private byte[] getDepthJPG(DepthReadResult result)
+        private byte[] getDepthJPG(float[] depthData, int depthWidth, int depthHeight)
         {
  
-            var texture = new Texture2D(result.depthWidth, result.depthHeight);
-            for (var y = 0; y < result.depthHeight; y++)
+            var texture = new Texture2D(depthWidth, depthHeight);
+            for (var y = 0; y < depthHeight; y++)
             {
-                for (var x = 0; x < result.depthWidth; x++)
+                for (var x = 0; x < depthWidth; x++)
                 {
-                    var v = result.depthData[y * result.depthWidth + x];
+                    var v = depthData[y * depthWidth + x];
                     Color color;
                     if (float.IsNaN(v))
                     {
@@ -194,31 +199,39 @@ namespace UniWebServer
             {
                 int width = 0, height = 0;
                 float[] pixels = null;
+                int widthFilter = 0, heightFilter = 0;
+                float[] pixelsFilter = null;
                 int imgWidth = 0, imgHeight = 0;
                 byte[] imgPixels = null;
-                capture_.AcquireNextFrame((pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight) =>
+                capture_.AcquireNextFrame((pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight, pDepthDataFilter, depthWidthFilter, depthHeightFilter) =>
                 {
                     width = depthWidth;
                     height = depthHeight;
+                    widthFilter = depthWidthFilter;
+                    heightFilter = depthHeightFilter;
                     imgWidth = videoWidth;
                     imgHeight = videoHeight;
                     pixels = new float[width * height];
+                    pixelsFilter = new float[width * height];
                     imgPixels = new byte[imgWidth * imgHeight * 4];
                     Marshal.Copy(pDepthData, pixels, 0, width * height);
+                    Marshal.Copy(pDepthDataFilter, pixelsFilter, 0, width * height);
                     Marshal.Copy(pVideoData, imgPixels, 0, imgWidth * imgHeight * 4);
 
                 });
-                return new DepthReadResult(pixels, width, height,imgPixels,imgWidth,imgHeight);
+                return new DepthReadResult(pixels, width, height, pixelsFilter, widthFilter, heightFilter, imgPixels,imgWidth,imgHeight);
             }
             else
             {
                 var checkerboard = new float[4096];
+                var checkerboardFilter = new float[4096];
                 var checkerboardImg = new byte[4096*4];
                 for (var y = 0; y < 64; y++)
                 {
                     for (var x = 0; x < 64; x++)
                     {
                         checkerboard[y * 64 + x] = y / 64f;
+                        checkerboardFilter[y * 64 + x] = y / 64f;
                         checkerboardImg[(y * 64 + x)*4]     = 128;
                         checkerboardImg[(y * 64 + x) * 4+1] = 128;
                         checkerboardImg[(y * 64 + x) * 4+2] = (byte)(y*3);
@@ -226,7 +239,7 @@ namespace UniWebServer
 
                     }
                 }
-                return new DepthReadResult(checkerboard,64,64, checkerboardImg,64,64);
+                return new DepthReadResult(checkerboard,64,64, checkerboardFilter, 64, 64, checkerboardImg,64,64);
             }
         }
 

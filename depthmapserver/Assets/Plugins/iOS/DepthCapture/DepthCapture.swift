@@ -13,6 +13,7 @@ class DepthCaptureBase: NSObject, AVCaptureDataOutputSynchronizerDelegate {
     let session = AVCaptureSession()
     let videoOutput = AVCaptureVideoDataOutput()
     let depthOutput = AVCaptureDepthDataOutput()
+    let depthOutputFilter = AVCaptureDepthDataOutput()
     var outputSynchronizer: AVCaptureDataOutputSynchronizer?
 
     func configure(deviceTypes: [AVCaptureDevice.DeviceType] = [.builtInTrueDepthCamera, .builtInDualCamera],
@@ -41,6 +42,14 @@ class DepthCaptureBase: NSObject, AVCaptureDataOutputSynchronizerDelegate {
                 throw Error.noCaptureConnection
             }
 
+            session.addOutput(depthOutputFilter)
+            depthOutputFilter.isFilteringEnabled = true
+            if let connection = depthOutputFilter.connection(with: .depthData) {
+                connection.isEnabled = true
+            } else {
+                throw Error.noCaptureConnection
+            }
+
             let format = device.activeFormat.supportedDepthDataFormats.filter {
                 return CMFormatDescriptionGetMediaSubType($0.formatDescription) == kCVPixelFormatType_DepthFloat32
                 }.max { first, second  in
@@ -55,7 +64,7 @@ class DepthCaptureBase: NSObject, AVCaptureDataOutputSynchronizerDelegate {
             device.activeDepthDataFormat = format
             device.unlockForConfiguration()
 
-            outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [videoOutput, depthOutput])
+            outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [videoOutput, depthOutput, depthOutputFilter])
             outputSynchronizer!.setDelegate(self, queue: queue)
 
             session.commitConfiguration()
@@ -74,17 +83,19 @@ class DepthCaptureBase: NSObject, AVCaptureDataOutputSynchronizerDelegate {
         }
     }
 
-    func depthCapture(videoData: CMSampleBuffer, depthData: AVDepthData, timestamp: CMTime) {
+    func depthCapture(videoData: CMSampleBuffer, depthData: AVDepthData, depthDataFilter: AVDepthData, timestamp: CMTime) {
     }
 
     func dataOutputSynchronizer(_ synchronizer: AVCaptureDataOutputSynchronizer, didOutput synchronizedDataCollection: AVCaptureSynchronizedDataCollection) {
         guard let syncedVideoData = synchronizedDataCollection.synchronizedData(for: videoOutput) as? AVCaptureSynchronizedSampleBufferData,
               !syncedVideoData.sampleBufferWasDropped,
+              let syncedDepthDataFilter = synchronizedDataCollection.synchronizedData(for: depthOutputFilter) as? AVCaptureSynchronizedDepthData,
+              !syncedDepthDataFilter.depthDataWasDropped,
               let syncedDepthData = synchronizedDataCollection.synchronizedData(for: depthOutput) as? AVCaptureSynchronizedDepthData,
               !syncedDepthData.depthDataWasDropped else {
             return
         }
-        depthCapture(videoData: syncedVideoData.sampleBuffer, depthData: syncedDepthData.depthData, timestamp: syncedVideoData.timestamp)
+        depthCapture(videoData: syncedVideoData.sampleBuffer, depthData: syncedDepthData.depthData, depthDataFilter: syncedDepthDataFilter, timestamp: syncedVideoData.timestamp)
     }
 }
 
@@ -120,19 +131,25 @@ class DepthCapture: DepthCaptureBase {
         super.stop()
     }
 
-    override func depthCapture(videoData: CMSampleBuffer, depthData: AVDepthData, timestamp: CMTime) {
+    override func depthCapture(videoData: CMSampleBuffer, depthData: AVDepthData, depthDataFilter: AVDepthData, timestamp: CMTime) {
         let videoBuffer = CMSampleBufferGetImageBuffer(videoData)!
         let depthBuffer = depthData.depthDataMap
+        let depthFilterBuffer = depthDataFilter.depthDataMap
         CVPixelBufferLockBaseAddress(videoBuffer, [.readOnly])
         CVPixelBufferLockBaseAddress(depthBuffer, [.readOnly])
+        CVPixelBufferLockBaseAddress(depthFilterBuffer, [.readOnly])
         callback(CVPixelBufferGetBaseAddress(videoBuffer)!,
                  CVPixelBufferGetWidth(videoBuffer),
                  CVPixelBufferGetHeight(videoBuffer),
                  CVPixelBufferGetBaseAddress(depthBuffer)!,
                  CVPixelBufferGetWidth(depthBuffer),
                  CVPixelBufferGetHeight(depthBuffer),
+                 CVPixelBufferGetBaseAddress(depthFilterBuffer)!,
+                 CVPixelBufferGetWidth(depthFilterBuffer),
+                 CVPixelBufferGetHeight(depthFilterBuffer),
                  state)
         CVPixelBufferUnlockBaseAddress(videoBuffer, [.readOnly])
         CVPixelBufferUnlockBaseAddress(depthBuffer, [.readOnly])
+        CVPixelBufferUnlockBaseAddress(depthFilterBuffer, [.readOnly])
     }
 }

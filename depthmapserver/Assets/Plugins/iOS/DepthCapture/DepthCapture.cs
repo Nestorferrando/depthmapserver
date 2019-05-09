@@ -12,7 +12,10 @@ public class DepthCapture : IDisposable
         int videoHeight,
         IntPtr pDepthData,
         int depthWidth,
-        int depthHeight);
+        int depthHeight,
+        IntPtr pDepthDataFilt,
+        int depthWidthFilt,
+        int depthHeightFilt);
 
     private delegate void DepthCaptureCallback(
         IntPtr pVideoData,
@@ -21,6 +24,9 @@ public class DepthCapture : IDisposable
         IntPtr pDepthData,
         IntPtr depthWidth,
         IntPtr depthHeight,
+        IntPtr pDepthDataFilt,
+        IntPtr depthWidthFilt,
+        IntPtr depthHeightFilt,
         IntPtr state);
 
     [DllImport("__Internal")]
@@ -126,6 +132,9 @@ public class DepthCapture : IDisposable
         IntPtr pDepthData,
         IntPtr depthWidth,
         IntPtr depthHeight,
+        IntPtr pDepthDataFilt,
+        IntPtr depthWidthFilt,
+        IntPtr depthHeightFilt,
         IntPtr state)
     {
         ((DepthCapture)GCHandle.FromIntPtr(state).Target).OnDepthCaptured(
@@ -134,7 +143,10 @@ public class DepthCapture : IDisposable
             (int)videoHeight,
             pDepthData,
             (int)depthWidth,
-            (int)depthHeight);
+            (int)depthHeight,
+            pDepthDataFilt,
+            (int)depthWidthFilt,
+            (int)depthHeightFilt);
     }
 
     protected virtual void OnDepthCaptured(
@@ -143,12 +155,15 @@ public class DepthCapture : IDisposable
         int videoHeight,
         IntPtr pDepthData,
         int depthWidth,
-        int depthHeight)
+        int depthHeight,
+        IntPtr pDepthDataFilt,
+        int depthWidthFilt,
+        int depthHeightFilt)
     {
         var handler = DepthCaptured;
         if (handler != null)
         {
-            handler(pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight);
+            handler(pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight, pDepthDataFilt, depthWidthFilt, depthHeightFilt);
         }
     }
 
@@ -156,9 +171,9 @@ public class DepthCapture : IDisposable
     {
         var ev = new AutoResetEvent(false);
         DepthCaptureEventHandler handler = null;
-        handler = (pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight) =>
+        handler = (pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight, pDepthDataFilt, depthWidthFilt, depthHeightFilt) =>
         {
-            action(pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight);
+            action(pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight, pDepthDataFilt, depthWidthFilt, depthHeightFilt);
             DepthCaptured -= handler;
             ev.Set();
         };
