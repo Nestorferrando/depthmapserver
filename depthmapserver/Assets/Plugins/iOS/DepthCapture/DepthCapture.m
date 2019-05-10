@@ -14,14 +14,15 @@ const void *DepthCapture_init(DepthCaptureCallback callback, const void *state) 
     return CFBridgingRetain([[DepthCapture alloc] initWithCallback:callback state:state]);
 }
 
-const intptr_t DepthCapture_configure(const void *capture, const char **deviceTypes, const int deviceTypeSize, const int position, const char *preset) {
+const intptr_t DepthCapture_configure(const void *capture, const char **deviceTypes, const int deviceTypeSize, const int position, const char *preset, const bool filter) {
     NSMutableArray<NSString *> *array = [NSMutableArray<NSString *> arrayWithCapacity:deviceTypeSize];
     for (int i = 0; i < deviceTypeSize; i++) {
         array[i] = [NSString stringWithCString:deviceTypes[i] encoding:NSASCIIStringEncoding];
     }
     return [(__bridge DepthCapture*)capture configureWithDeviceTypes:array
                                                             position:position
-                                                              preset:[NSString stringWithCString:preset encoding:NSASCIIStringEncoding]];
+                                                              preset:[NSString stringWithCString:preset encoding:NSASCIIStringEncoding]
+                                                              filter:filter];
 }
 
 void DepthCapture_start(const void *capture) {

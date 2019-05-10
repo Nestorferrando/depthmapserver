@@ -17,7 +17,8 @@ class DepthCaptureBase: NSObject, AVCaptureDataOutputSynchronizerDelegate {
 
     func configure(deviceTypes: [AVCaptureDevice.DeviceType] = [.builtInTrueDepthCamera, .builtInDualCamera],
                    position: AVCaptureDevice.Position = .unspecified,
-                   preset: AVCaptureSession.Preset = .vga640x480) throws {
+                   preset: AVCaptureSession.Preset = .vga640x480,
+                   filter: Bool = false) throws {
         try queue.sync {
             let discovery = AVCaptureDevice.DiscoverySession(deviceTypes: deviceTypes,
                                                              mediaType: .video,
@@ -34,7 +35,7 @@ class DepthCaptureBase: NSObject, AVCaptureDataOutputSynchronizerDelegate {
             videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
 
             session.addOutput(depthOutput)
-            depthOutput.isFilteringEnabled = false
+            depthOutput.isFilteringEnabled = filter
             if let connection = depthOutput.connection(with: .depthData) {
                 connection.isEnabled = true
             } else {
@@ -101,11 +102,13 @@ class DepthCapture: DepthCaptureBase {
 
     @objc func configure(deviceTypes: [String],
                          position: Int,
-                         preset: String) -> Int {
+                         preset: String,
+                         filter: Bool) -> Int {
         do {
             try super.configure(deviceTypes: deviceTypes.map { AVCaptureDevice.DeviceType(rawValue: $0) },
                                 position: AVCaptureDevice.Position(rawValue: position)!,
-                                preset: AVCaptureSession.Preset(rawValue: preset))
+                                preset: AVCaptureSession.Preset(rawValue: preset),
+                                filter: filter)
         } catch {
             return (error as NSError).code
         }
