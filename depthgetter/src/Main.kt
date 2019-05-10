@@ -30,7 +30,7 @@ fun main(args: Array<String>) {
 }
 
 
-data class Response(val depthData: String,val depthWidth: Int,val depthHeight: Int,val depthDataFilter: String,val depthWidthFilter: Int,val depthHeightFilter: Int,val jpgImageData: String)
+data class Response(val depthData: String,val depthWidth: Int,val depthHeight: Int,val jpgImageData: String)
 
 fun sendGet(address: String, port: Int, endPoint: String): String? {
     val url = URL("http://$address:$port/$endPoint")

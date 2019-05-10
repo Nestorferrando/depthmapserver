@@ -37,7 +37,7 @@ public class CaptureButton : MonoBehaviour
         {
             int width = 0, height = 0;
             float[] pixels = null;
-            capture_.AcquireNextFrame((pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight, pDepthDataFilter, depthWidthFilter, depthHeightFilter) =>
+            capture_.AcquireNextFrame((pVideoData, videoWidth, videoHeight, pDepthData, depthWidth, depthHeight) =>
             {
                 width = depthWidth;
                 height = depthHeight;

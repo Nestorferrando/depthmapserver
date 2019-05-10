@@ -8,9 +8,6 @@ typedef void (*DepthCaptureCallback)(const void *pVideoData,
                                      const void *pDepthData,
                                      intptr_t depthWidth,
                                      intptr_t depthHeight,
-                                     const void *pDepthDataFilt,
-                                     intptr_t depthWidthFilt,
-                                     intptr_t depthHeightFilt,
                                      const void *state);
 
 const void *DepthCapture_init(DepthCaptureCallback callback, const void *state) {
