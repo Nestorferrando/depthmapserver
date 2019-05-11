@@ -11,10 +11,12 @@ fun main(args: Array<String>) {
 
     val address = if (args.isNotEmpty()) args[0] else "127.0.0.1"
     val targetFile = if (args.size>1) args[1] else "iphoneDeph-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss"))}.json"
-    val data = sendGet(address, 8079, "depthdata") ?: throw RuntimeException("Received no response from server")
+    val filtered = args.any { it.contains("-withfilter") }
+    val endPoint = if (filtered) "smoothdepthdata" else "depthdata"
+    val data = sendGet(address, 8079, endPoint) ?: throw RuntimeException("Received no response from server")
 
     /*
-    //test stuff
+    //decode sample
     val response =Gson().fromJson(data,Response::class.java)
     val img = Base64.getDecoder().decode(response.jpgImageData)
     val depth = Base64.getDecoder().decode(response.depthData)
