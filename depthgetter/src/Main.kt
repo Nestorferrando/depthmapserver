@@ -9,9 +9,9 @@ import java.util.*
 
 fun main(args: Array<String>) {
 
-    val address = if (args.isNotEmpty()) args[0] else "127.0.0.1"
-    val targetFile = if (args.size>1) args[1] else "iphoneDeph-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss"))}.json"
-    val filtered = args.any { it.contains("-withfilter") }
+    val address =  args.firstOrNull {it.startsWith("-ip=")}?.substring(4)?: "127.0.0.1"
+    val targetFile =  args.firstOrNull {it.startsWith("-o=")}?.substring(3)?:  "iphoneDeph-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss"))}.json"
+    val filtered = args.any { it.contains("-filtered") }
     val endPoint = if (filtered) "smoothdepthdata" else "depthdata"
     val data = sendGet(address, 8079, endPoint) ?: throw RuntimeException("Received no response from server")
 

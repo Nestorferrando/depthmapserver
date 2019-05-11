@@ -1,1 +1,1 @@
-java -jar depthgetter.jar 127.0.0.1
+java -jar depthgetter.jar 127.0.0.1 outputfile.json
