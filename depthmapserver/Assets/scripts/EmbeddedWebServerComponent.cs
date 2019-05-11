@@ -18,9 +18,11 @@ namespace UniWebServer
         public bool processRequestsInMainThread = true;
         public bool logRequests = true;
 
+
         private int requestCount = 0;
         private WebServer server;
         private DepthCapture capture_;
+        public bool filterSelected = true;
 
         IEnumerator Start()
         {
@@ -32,17 +34,19 @@ namespace UniWebServer
             server = new WebServer(port, workerThreads, processRequestsInMainThread);
             server.logRequests = logRequests;
             server.HandleRequest += HandleRequest;
-            if (startOnAwake) {
+            if (startOnAwake)
+            {
                 server.Start();
             }
             GameObject.Find("serveraddress").GetComponent<Text>().text = GetLocalIPAddress();
-
+            GameObject.Find("status").GetComponent<Text>().text = "Camera Filtering: " + filterSelected;
+            GameObject.Find("status").GetComponent<Text>().color = filterSelected ? Color.green : Color.yellow;
 
             if (Application.platform == RuntimePlatform.IPhonePlayer)
             {
                 capture_ = new DepthCapture();
                 yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
-                capture_.Configure();
+                capture_.Configure(filter: filterSelected);
                 capture_.Start();
             }
 
@@ -88,7 +92,8 @@ namespace UniWebServer
 
         void Update()
         {
-            if (server.processRequestsInMainThread) {
+            if (server.processRequestsInMainThread)
+            {
                 server.ProcessRequests();
             }
         }
@@ -103,34 +108,66 @@ namespace UniWebServer
             var localPath = request.uri.LocalPath;
             Debug.Log("request localPath :" + localPath);
 
+
             switch (localPath)
             {
-                case "/depthdata":
-                    var depthMap = getDepthDataFloatArray();
-                    response.statusCode = 200;
-                    response.message = "OK";
-                    var depthResponse = new DepthDataResponse(
-                        Convert.ToBase64String(floatToByteArray(depthMap.depthData)), depthMap.depthWidth, depthMap.depthHeight, Convert.ToBase64String(getimgJPG(depthMap)));
-                    response.Write(JsonUtility.ToJson(depthResponse));
-                    break;
-                case "/viewdepth":
-                    var depthMap2 = getDepthDataFloatArray();
-                    response.statusCode = 200;
-                    response.message = "OK";
-                    response.Write("<html><body bgcolor=\"#E6E6FA\"><h3>depth:</h3> " + GetJPGDataURI(getDepthJPG(depthMap2))+ "<h3>image:</h3> " + GetJPGDataURI(getimgJPG(depthMap2)) + "</body></html>");
-                    break;
+                case "/depthdata": onDepthData(response, false); break;
+                case "/viewdepth": onViewDepth(response, false); break;
+                case "/smoothdepthdata": onDepthData(response, true); break;
+                case "/viewsmoothdepth": onViewDepth(response, true); break;
                 default:
                     response.statusCode = 200;
                     response.message = "OK";
-                    response.Write("<html><body bgcolor=\"#E6E6FA\"> <h2>depth map webserver for iphone</h2>  <h3>endpoints:</h3>  <h5>\t /viewdepth</h5> <h5>\t /depthdata</h5> </body></html>");
+                    response.Write("<html><body bgcolor=\"#E6E6FA\"> <h2>depth map webserver for iphone</h2>  <h3>endpoints:</h3>  <h5>\t /viewdepth</h5> <h5>\t /depthdata</h5> <h5>\t /viewsmoothdepth</h5> <h5>\t /smoothdepthdata</h5> </body></html>");
                     break;
             }
+        }
 
+        private void onViewDepth(Response response, bool filtered)
+        {
+            changeFilterStatus(filtered);
+            var depthMap = getDepthDataFloatArray();
+            response.statusCode = 200;
+            response.message = "OK";
+            response.Write("<html><body bgcolor=\"#E6E6FA\"><h3>depth:</h3> " + GetJPGDataURI(getDepthJPG(depthMap)) + "<h3>image:</h3> " + GetJPGDataURI(getimgJPG(depthMap)) + "</body></html>");
+        }
+
+        private void onDepthData(Response response, bool filtered)
+        {
+            changeFilterStatus(filtered);
+
+            var depthMap = getDepthDataFloatArray();
+            response.statusCode = 200;
+            response.message = "OK";
+            var depthResponse = new DepthDataResponse(
+                Convert.ToBase64String(floatToByteArray(depthMap.depthData)), depthMap.depthWidth, depthMap.depthHeight, Convert.ToBase64String(getimgJPG(depthMap)));
+            response.Write(JsonUtility.ToJson(depthResponse));
+
+        }
+
+        private void changeFilterStatus(bool newStatus)
+        {
+            if (newStatus != filterSelected)
+            {
+                filterSelected = newStatus;
+
+                if (Application.platform == RuntimePlatform.IPhonePlayer)
+                {
+                    capture_.Stop();
+                    capture_.Dispose();
+                    capture_ = new DepthCapture();
+                    capture_.Configure(filter: filterSelected);
+                    capture_.Start();
+                }
+                else System.Threading.Thread.Sleep(2000);
+                GameObject.Find("status").GetComponent<Text>().text = "Camera Filtering: " + filterSelected;
+                GameObject.Find("status").GetComponent<Text>().color = filterSelected ? Color.green : Color.yellow;
+            }
         }
 
         private byte[] getDepthJPG(DepthReadResult result)
         {
- 
+
             var texture = new Texture2D(result.depthWidth, result.depthHeight);
             for (var y = 0; y < result.depthHeight; y++)
             {
@@ -164,11 +201,11 @@ namespace UniWebServer
             {
                 for (var x = 0; x < result.imgWidth; x++)
                 {
-                    var b = result.imgData[(y * result.imgWidth + x)*4];
-                    var g = result.imgData[(y * result.imgWidth + x)*4+1];
-                    var r = result.imgData[(y * result.imgWidth + x)*4+2];
-                    var a = result.imgData[(y * result.imgWidth + x)*4+3];
-                    var color = new Color(r/255f,g / 255f, b / 255f, a / 255f);
+                    var b = result.imgData[(y * result.imgWidth + x) * 4];
+                    var g = result.imgData[(y * result.imgWidth + x) * 4 + 1];
+                    var r = result.imgData[(y * result.imgWidth + x) * 4 + 2];
+                    var a = result.imgData[(y * result.imgWidth + x) * 4 + 3];
+                    var color = new Color(r / 255f, g / 255f, b / 255f, a / 255f);
                     texture.SetPixel(x, y, color);
                 }
             }
@@ -208,25 +245,25 @@ namespace UniWebServer
                     Marshal.Copy(pVideoData, imgPixels, 0, imgWidth * imgHeight * 4);
 
                 });
-                return new DepthReadResult(pixels, width, height,imgPixels,imgWidth,imgHeight);
+                return new DepthReadResult(pixels, width, height, imgPixels, imgWidth, imgHeight);
             }
             else
             {
                 var checkerboard = new float[4096];
-                var checkerboardImg = new byte[4096*4];
+                var checkerboardImg = new byte[4096 * 4];
                 for (var y = 0; y < 64; y++)
                 {
                     for (var x = 0; x < 64; x++)
                     {
                         checkerboard[y * 64 + x] = y / 64f;
-                        checkerboardImg[(y * 64 + x)*4]     = 128;
-                        checkerboardImg[(y * 64 + x) * 4+1] = 128;
-                        checkerboardImg[(y * 64 + x) * 4+2] = (byte)(y*3);
-                        checkerboardImg[(y * 64 + x) * 4+3] = 255;
+                        checkerboardImg[(y * 64 + x) * 4] = 128;
+                        checkerboardImg[(y * 64 + x) * 4 + 1] = 128;
+                        checkerboardImg[(y * 64 + x) * 4 + 2] = (byte)(y * 3);
+                        checkerboardImg[(y * 64 + x) * 4 + 3] = 255;
 
                     }
                 }
-                return new DepthReadResult(checkerboard,64,64, checkerboardImg,64,64);
+                return new DepthReadResult(checkerboard, 64, 64, checkerboardImg, 64, 64);
             }
         }
 
