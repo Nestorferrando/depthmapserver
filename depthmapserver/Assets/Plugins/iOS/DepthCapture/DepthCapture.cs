@@ -27,7 +27,7 @@ public class DepthCapture : IDisposable
     private static extern IntPtr DepthCapture_init(DepthCaptureCallback callback, IntPtr state);
 
     [DllImport("__Internal")]
-    private static extern IntPtr DepthCapture_configure(IntPtr capture, string[] deviceTypes, int deviceTypeSize, int position, string preset);
+    private static extern IntPtr DepthCapture_configure(IntPtr capture, string[] deviceTypes, int deviceTypeSize, int position, string preset, bool filter);
 
     [DllImport("__Internal")]
     private static extern void DepthCapture_start(IntPtr capture);
