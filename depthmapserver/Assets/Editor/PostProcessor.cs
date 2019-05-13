@@ -20,7 +20,7 @@ public static class Postprocessor
             var infoPath = Path.Combine(path, "Info.plist");
             var info = new PlistDocument();
             info.ReadFromFile(infoPath);
-            info.root.SetString("NSCameraUsageDescription", "深度カメラの動作テストのためにカメラAPIを使用します");
+            info.root.SetString("NSCameraUsageDescription", "Please, give access to the camera to get camera depth");
             info.WriteToFile(infoPath);
         }
     }
